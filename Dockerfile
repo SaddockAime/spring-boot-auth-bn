@@ -1,17 +1,16 @@
-# Start with a base image containing Java runtime
-FROM eclipse-temurin:17-jre-alpine
-
-# Add a volume pointing to /tmp
-VOLUME /tmp
-
-# Make port 8081 available to the world outside this container
-EXPOSE 8081
-
-# Set application's location inside container and data
+# Build stage
+FROM maven:3.8.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy the jar file into the container
-COPY target/auth-service-0.0.1-SNAPSHOT.jar app.jar
+# Runtime stage
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
+VOLUME /tmp
+EXPOSE 8081
 
 # Set environment variables (these will be overridden by Render's environment variables)
 ENV SPRING_PROFILES_ACTIVE=prod
